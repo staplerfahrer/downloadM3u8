@@ -18,6 +18,12 @@ isPlayList = lambda url: '.urlset' in url
 toList = lambda lst: [u for u in re.split(r'#EXT.*?,', lst) if len(u)]
 askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/n> ')
 maybePrint = lambda future, text, end='\n': print(text, end=end, flush=True) if future.done() else None
+def pbf(last, progress, total, increase):
+	now = time()
+	pb = f'{100*progress//total*"#":.<100} {progress: >13,} B of {total:,} B   {increase/(now-last): >10,.0f} B/s{" "*20}'
+	pb = '`'.join([pb[(x-1)*10:x*10] for x in range(1, 11)]) + pb[100:]
+	return pb, now
+
 def getPlayList(printIfReady, url):
 	printIfReady('Downloading parts list...')
 	return requests.get(url).text.replace('\n','').replace('#EXT-X-ENDLIST','')
@@ -32,10 +38,8 @@ def appendPart(out, num, url, printIfReady):
 			for data in response.iter_content(1024*1024):
 				downloaded+=len(data)
 				out.write(data)
-				pb = f'{100*downloaded//totalLength*"#":.<100} {downloaded: >13,} B of {totalLength:,} B   {len(data)/(time()-last): >10,.0f} B/s{" "*20}'
-				pb = '`'.join([pb[(x-1)*10:x*10] for x in range(1, 11)]) + pb[100:]
+				pb, last = pbf(last, downloaded, totalLength, len(data))
 				printIfReady(pb, end='\r')
-				last = time()
 			printIfReady(f'\nFinished {downloaded:,} B.')
 			break
 		except Exception as exc:

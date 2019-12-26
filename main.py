@@ -2,7 +2,7 @@ import sys
 import re
 import requests
 import subprocess
-from time import time
+from time import time, sleep
 import concurrent.futures
 import os
 from functools import partial
@@ -20,14 +20,15 @@ askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/n> ')
 maybePrint = lambda future, text, end='\n': print(text, end=end, flush=True) if future.done() else None
 def pbf(last, progress, total, increase):
 	now = time()
-	pb = f'{100*progress//total*"#":.<100} {progress: >13,} B of {total:,} B   {increase/(now-last): >10,.0f} B/s{" "*20}'
-	pb = '`'.join([pb[(x-1)*10:x*10] for x in range(1, 11)]) + pb[100:]
+	pb = f'{100*progress//total*"●":○<100} {progress: >13,} B of {total:,} B   {increase/(now-last): >10,.0f} B/s{" "*20}'
+	pb = '·'.join([pb[(x-1)*10:x*10] for x in range(1, 11)]) + pb[100:]
 	return pb, now
 
 def getPlayList(printIfReady, url):
 	printIfReady('Downloading parts list...')
 	return requests.get(url).text.replace('\n','').replace('#EXT-X-ENDLIST','')
 def appendPart(out, num, url, printIfReady):
+	chunkK = 64
 	retry = True
 	while retry:
 		downloaded=0
@@ -35,11 +36,12 @@ def appendPart(out, num, url, printIfReady):
 			response = requests.get(url, stream=True)
 			totalLength = int(response.headers.get('content-length'))
 			last = time()
-			for data in response.iter_content(1024*1024):
+			for data in response.iter_content(chunkK*1024):
 				downloaded+=len(data)
 				out.write(data)
 				pb, last = pbf(last, downloaded, totalLength, len(data))
 				printIfReady(pb, end='\r')
+				sleep(0.1)
 			printIfReady(f'\nFinished {downloaded:,} B.')
 			break
 		except Exception as exc:

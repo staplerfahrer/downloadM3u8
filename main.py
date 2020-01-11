@@ -47,7 +47,7 @@ def appendPart(out, num, url, icg, printIfReady):
 			for data in response.iter_content(chunkK*1024):
 				downloaded+=len(data)
 				out.write(data)
-				pb, lastTime = progressBar(startedAt, downloaded, totalLength, downloaded)
+				pb, _ = progressBar(startedAt, downloaded, totalLength, downloaded)
 				printIfReady(pb, end='\r')
 				sleep(icg)
 			printIfReady(f'\nFinished {downloaded:,} B.')

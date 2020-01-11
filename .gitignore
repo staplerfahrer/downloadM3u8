@@ -1,3 +1,4 @@
 *.mp4
 *.lnk
 */.ropeproject/
+__pycache__/*

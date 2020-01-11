@@ -6,6 +6,7 @@ from time import time, sleep
 import concurrent.futures
 import os
 from functools import partial
+from getDlUrl import urlAndTitle
 
 headers = {
 	"Referer": "https://ci.phncdn.com/www-static/css/generated-header"
@@ -26,9 +27,9 @@ urlToFilename = lambda url: re.search(r'/([^/]*?\.mp4)', url).group(1)
 isPlayList = lambda url: '.urlset' in url
 toList = lambda lst: [u for u in re.split(r'#EXT.*?,', lst) if len(u)]
 askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/N> ')
-maybePrint = lambda future, text, end='\n': print(text, end=end, flush=True) if future.done() else None
-progressBarLength = lambda: len(progressBar(0,10**10,10**10,10**10)[0])
-def progressBar(last, progress, total, increase):
+maybePrint = lambda future,text,end='\n': print(text,end=end,flush=True) if future.done() else None
+pBarLen = lambda: len(pBar(0,10**10,10**10,10**10)[0])
+def pBar(last, progress, total, increase):
 	now = time()
 	bar = f'{100*progress//total*"●":○<100} {progress: >13,} B of {total:,} B, {increase/(now-last): >10,.0f} B/s'
 	bar = '·'.join([bar[(x-1)*10:x*10] for x in range(1, 11)]) + bar[100:]
@@ -47,7 +48,7 @@ def appendPart(out, num, url, icg, printIfReady):
 			for data in response.iter_content(chunkK*1024):
 				downloaded+=len(data)
 				out.write(data)
-				pb, _ = progressBar(startedAt, downloaded, totalLength, downloaded)
+				pb, _ = pBar(startedAt, downloaded, totalLength, downloaded)
 				printIfReady(pb, end='\r')
 				sleep(icg)
 			printIfReady(f'\nFinished {downloaded:,} B.')
@@ -56,23 +57,28 @@ def appendPart(out, num, url, icg, printIfReady):
 			retry = 'y' == input(f'This part failed to download ({exc}). Try again? y/n')
 			printIfReady(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
 
-print("Get the quality_1080p url from browser console.".ljust(progressBarLength(), '_'))
-icg = askIcg(0.1)
-pastedUrl = askUrl()
+print("Get the quality_1080p url from browser console.".ljust(pBarLen(), '_'))
+icg = 0.1#askIcg(0.1)
+pastedUrl, title = urlAndTitle(askUrl())
 prefix = urlPathPrefix(pastedUrl)
 tempName = urlToFilename(pastedUrl)
 print(f'{prefix} --> {tempName}...')
-with concurrent.futures.ThreadPoolExecutor() as executor:
-	nameInputter = executor.submit(askFilename)
-	printIfReady = partial(maybePrint, nameInputter)
-	parts = toList(getPlayList(printIfReady, pastedUrl)) if isPlayList(pastedUrl) else [pastedUrl] 
-	with open(tempName, 'wb') as out:
-		for num, part in enumerate(parts, start=1):
-			printIfReady(f'Downloading {num: >3} of {len(parts)}: {part[:30]}... ', end=None)
-			url = prefix+'/'+part if isPlayList(pastedUrl) else part
-			appendPart(out, num, url, icg, printIfReady)
+print(title)
 
-	newName = nameInputter.result() + ' ' + tempName
+# with concurrent.futures.ThreadPoolExecutor() as executor:
+# 	nameInputter = executor.submit(askFilename)
+# 	printIfReady = partial(maybePrint, nameInputter)
+printIfReady = print
+parts = toList(getPlayList(printIfReady, pastedUrl)) if isPlayList(pastedUrl) else [pastedUrl] 
+with open(tempName, 'wb') as out:
+	for num, part in enumerate(parts, start=1):
+		printIfReady(f'Downloading {num: >3} of {len(parts)}: {part[:80]}... ', end=None)
+		url = prefix+'/'+part if isPlayList(pastedUrl) else part
+		appendPart(out, num, url, icg, printIfReady)
+
+# newName = nameInputter.result() + ' ' + tempName
+newName = title + ' ' + tempName
+
 os.rename(tempName, newName)
 if askOpen(newName):
 	subprocess.run(['explorer', newName])

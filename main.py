@@ -1,11 +1,8 @@
-import sys
+import sys, os
 import re
 import requests
 import subprocess
 from time import time, sleep
-import concurrent.futures
-import os
-from functools import partial
 from getDlUrl import urlAndTitle
 
 headers = {
@@ -14,12 +11,12 @@ headers = {
 	"0.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7"
 	"9.0.3945.88 Safari/537.36"}
 chunkK = 64
+icg = 0.3
 
 # Accepts 
 # ...xxx.mp4.urlset/index-f1-v1-a1.m3u8
 # or:
 # ...xxx.mp4?val...
-askIcg = lambda icg: float(input('Inter-chunk gap [0.1]> ') or icg)
 askUrl = lambda: input('Paste url> ')
 askFilename = lambda: input('Save with prefix> ')
 urlPathPrefix = lambda url: url.rpartition('/')[0]
@@ -28,6 +25,7 @@ isPlayList = lambda url: '.urlset' in url
 toList = lambda lst: [u for u in re.split(r'#EXT.*?,', lst) if len(u)]
 askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/N> ')
 maybePrint = lambda future,text,end='\n': print(text,end=end,flush=True) if future.done() else None
+isSlow = lambda startedAt, downloaded: downloaded/(time()-startedAt)<10**5 
 pBarLen = lambda: len(pBar(0,10**10,10**10,10**10)[0])
 def pBar(last, progress, total, increase):
 	now = time()
@@ -48,26 +46,23 @@ def appendPart(out, num, url, icg, printIfReady):
 			for data in response.iter_content(chunkK*1024):
 				downloaded+=len(data)
 				out.write(data)
+				slowMode = isSlow(startedAt, downloaded)
 				pb, _ = pBar(startedAt, downloaded, totalLength, downloaded)
-				printIfReady(pb, end='\r')
-				sleep(icg)
+				printIfReady(pb+(' *slow*' if slowMode else '       '), end='\r')
+				sleep(icg if slowMode else 0)
 			printIfReady(f'\nFinished {downloaded:,} B.')
 			break
 		except Exception as exc:
 			retry = 'y' == input(f'This part failed to download ({exc}). Try again? y/n')
 			printIfReady(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
 
-print("Get the quality_1080p url from browser console.".ljust(pBarLen(), '_'))
-icg = 0.1#askIcg(0.1)
+print('Paste the web page url below'.ljust(pBarLen(), '_'))
 pastedUrl, title = urlAndTitle(askUrl())
 prefix = urlPathPrefix(pastedUrl)
 tempName = urlToFilename(pastedUrl)
 print(f'{prefix} --> {tempName}...')
 print(title)
 
-# with concurrent.futures.ThreadPoolExecutor() as executor:
-# 	nameInputter = executor.submit(askFilename)
-# 	printIfReady = partial(maybePrint, nameInputter)
 printIfReady = print
 parts = toList(getPlayList(printIfReady, pastedUrl)) if isPlayList(pastedUrl) else [pastedUrl] 
 with open(tempName, 'wb') as out:
@@ -76,7 +71,6 @@ with open(tempName, 'wb') as out:
 		url = prefix+'/'+part if isPlayList(pastedUrl) else part
 		appendPart(out, num, url, icg, printIfReady)
 
-# newName = nameInputter.result() + ' ' + tempName
 newName = title + ' ' + tempName
 
 os.rename(tempName, newName)

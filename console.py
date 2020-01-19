@@ -1,6 +1,10 @@
 introduce = lambda: print('Paste the web page url below'.ljust(pBarLen(), '_'))
 askUrl = lambda: input('Paste url> ')
 askFilename = lambda: input('Save with prefix> ')
+sayDlLocation = lambda prefix, tempName: print(f'{prefix} --> {tempName}...')
+sayTitle = lambda title: print(title)
+sayPartsList = lambda: print('Downloading parts list...')
+sayPartDl = lambda num, parts, part: print(f'Downloading {num: >3} of {len(parts)}: {part[:80]}... ', end=None)
 askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/N> ')
 
 pBarLen = lambda: len(pBar(0,10**10,10**10,10**10))

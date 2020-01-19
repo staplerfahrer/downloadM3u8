@@ -1,78 +1,38 @@
 import sys, os
 import re
-import requests
 import subprocess
-from time import time, sleep
 from getDlUrl import urlAndTitle
+import console
+import httpIo as http
 
-headers = {
-	"Referer": "https://ci.phncdn.com/www-static/css/generated-header"
-	".css?cache=2019122001", "User-Agent": "Mozilla/5.0 (Windows NT 1"
-	"0.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7"
-	"9.0.3945.88 Safari/537.36"}
-chunkK = 64
-icg = 0.3
 
 # Accepts 
 # ...xxx.mp4.urlset/index-f1-v1-a1.m3u8
 # or:
 # ...xxx.mp4?val...
-askUrl = lambda: input('Paste url> ')
-askFilename = lambda: input('Save with prefix> ')
 urlPathPrefix = lambda url: url.rpartition('/')[0]
 urlToFilename = lambda url: re.search(r'/([^/]*?\.mp4)', url).group(1)
 isPlayList = lambda url: '.urlset' in url
 toList = lambda lst: [u for u in re.split(r'#EXT.*?,', lst) if len(u)]
-askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/N> ')
 maybePrint = lambda future,text,end='\n': print(text,end=end,flush=True) if future.done() else None
-isSlow = lambda startedAt, downloaded: downloaded/(time()-startedAt)<10**5 
-pBarLen = lambda: len(pBar(0,10**10,10**10,10**10)[0])
-def pBar(last, progress, total, increase):
-	now = time()
-	bar = f'{100*progress//total*"●":○<100} {progress: >13,} B of {total:,} B, {increase/(now-last): >10,.0f} B/s'
-	bar = '·'.join([bar[(x-1)*10:x*10] for x in range(1, 11)]) + bar[100:]
-	return bar, now
-def getPlayList(printIfReady, url):
-	printIfReady('Downloading parts list...')
-	return requests.get(url, headers=headers).text.replace('\n','').replace('#EXT-X-ENDLIST','')
-def appendPart(out, num, url, icg, printIfReady):
-	retry = True
-	while retry:
-		downloaded=0
-		try:
-			response = requests.get(url, headers=headers, stream=True)
-			totalLength = int(response.headers.get('content-length'))
-			startedAt = time()
-			for data in response.iter_content(chunkK*1024):
-				downloaded+=len(data)
-				out.write(data)
-				slowMode = isSlow(startedAt, downloaded)
-				pb, _ = pBar(startedAt, downloaded, totalLength, downloaded)
-				printIfReady(pb+(' *slow*' if slowMode else '       '), end='\r')
-				sleep(icg if slowMode else 0)
-			printIfReady(f'\nFinished {downloaded:,} B.')
-			break
-		except Exception as exc:
-			retry = 'y' == input(f'This part failed to download ({exc}). Try again? y/n')
-			printIfReady(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
 
-print('Paste the web page url below'.ljust(pBarLen(), '_'))
-pastedUrl, title = urlAndTitle(askUrl())
+console.introduce()
+pastedUrl, title = urlAndTitle(console.askUrl())
 prefix = urlPathPrefix(pastedUrl)
 tempName = urlToFilename(pastedUrl)
 print(f'{prefix} --> {tempName}...')
 print(title)
 
 printIfReady = print
-parts = toList(getPlayList(printIfReady, pastedUrl)) if isPlayList(pastedUrl) else [pastedUrl] 
+parts = toList(http.getPlayList(printIfReady, pastedUrl)) if isPlayList(pastedUrl) else [pastedUrl] 
 with open(tempName, 'wb') as out:
 	for num, part in enumerate(parts, start=1):
 		printIfReady(f'Downloading {num: >3} of {len(parts)}: {part[:80]}... ', end=None)
 		url = prefix+'/'+part if isPlayList(pastedUrl) else part
-		appendPart(out, num, url, icg, printIfReady)
+		http.appendPart(out, num, url, console)
 
 newName = title + ' ' + tempName
 
 os.rename(tempName, newName)
-if askOpen(newName):
+if console.askOpen(newName):
 	subprocess.run(['explorer', newName])

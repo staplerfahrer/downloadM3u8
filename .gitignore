@@ -2,3 +2,4 @@
 *.lnk
 */.ropeproject/
 __pycache__/*
+headers.json

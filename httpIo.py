@@ -1,21 +1,19 @@
-chunkK = 64
-icg = 0.3
-
-headers = {
-	"Referer": "https://ci.phncdn.com/www-static/css/generated-header"
-	".css?cache=2019122001", "User-Agent": "Mozilla/5.0 (Windows NT 1"
-	"0.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/7"
-	"9.0.3945.88 Safari/537.36"}
-
 from time import time, sleep
 from requests import get as rGet
-import re
+import re, json
+
+chunkK = 64
+icg = 0.3
+def loadHeaders(filename):
+	with open(filename, 'r') as headers:
+		return json.load(headers)
+headers = loadHeaders('headers.json')
 
 def getPlayList(console, url):
 	console.sayPartsList()
 	return rGet(url, headers=headers).text.replace('\n','').replace('#EXT-X-ENDLIST','')
 def appendPart(file, num, url, console):
-	global chunkK, icg
+	global chunkK, icg, headers
 	retry = True
 	while retry:
 		bytesGot=0

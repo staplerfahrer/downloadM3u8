@@ -1,11 +1,13 @@
-introduce = lambda: print('Paste the web page url below'.ljust(pBarLen(), '_'))
-askUrl = lambda: input('Paste url> ')
-askFilename = lambda: input('Save with prefix> ')
-sayDlLocation = lambda prefix, tempName: print(f'{prefix} --> {tempName}...')
-sayTitle = lambda title: print(title)
-sayPartsList = lambda: print('Downloading parts list...')
-sayPartDl = lambda num, parts, part: print(f'Downloading {num: >3} of {len(parts)}: {part[:80]}... ', end=None)
-askOpen = lambda fileName: 'y' == input(f'{fileName} DONE. Open? y/N> ')
+import math
+
+introduce = lambda: print('Auto-download resource from web page URL'.ljust(pBarLen(), '_'))
+askUrl = lambda: input('Paste the page URL> ')
+# askFilename = lambda: input('Save with prefix> ')
+sayDlLocation = lambda prefix, tempName: print(f'Downloading from [{prefix}] to temporary file [{tempName}]...')
+sayTitle = lambda title: print(f'Resource title [{title}]')
+sayPartsList = lambda: print('Downloading m3u8 playlist...')
+sayPartDl = lambda num, parts, part: print(f'Downloading part {num: >3} of {len(parts)}: {part[:80]}...', end=None)
+askOpen = lambda fileName: 'y' == input(f'Finished downloading [{fileName}]. Open? y/N> ')
 
 pBarLen = lambda: len(pBar(0,10**10,10**10,10**10))
 def pBar(last, progress, total, Bps):
@@ -14,6 +16,7 @@ def pBar(last, progress, total, Bps):
 	return bar
 
 markSlow = lambda pb, slowMode: print(pb+(' *slow*' if slowMode else '       '), end='\r')
-sayFinished = lambda downloaded: print(f'\nFinished {downloaded:,} B.')
+sayFinished = lambda downloaded, ofTotal: print(f'\nFinished this part, {downloaded:,} B of {ofTotal:,} B ({math.floor(downloaded*100/ofTotal):.0f} %).')
 askRetry = lambda exc: input(f'This part failed to download ({exc}). Try again? y/n')
 sayRetry = lambda downloaded, retry: print(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
+finish = lambda: print('_'*pBarLen())

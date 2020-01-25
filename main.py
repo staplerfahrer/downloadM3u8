@@ -1,6 +1,7 @@
 from getDlUrl import urlAndTitle
 import console
 import httpIo as http
+import fileIo
 
 # Accepts 
 # ...xxx.mp4.urlset/index-f1-v1-a1.m3u8
@@ -8,26 +9,28 @@ import httpIo as http
 # ...xxx.mp4?val...
 console.introduce()
 pastedUrl, videoTitle = urlAndTitle(console.askUrl())
+safeTitle = fileIo.safeFilename(videoTitle)
 
 prefix = http.urlPathPrefix(pastedUrl)
 serverFileName = http.urlToFilename(pastedUrl)
 
 console.sayDlLocation(prefix, serverFileName)
-console.sayTitle(videoTitle)
+console.sayTitle(safeTitle)
 
 isPlayList = http.isPlayList(pastedUrl)
-parts = http.toList(http.getPlayList(console, pastedUrl)) if isPlayList else [pastedUrl] 
+partsList = http.toList(http.getPlayList(console, pastedUrl)) if isPlayList else [pastedUrl] 
 
 with open(serverFileName, 'wb') as file:
-	for num, part in enumerate(parts, start=1):
-		console.sayPartDl(num, parts, part)
-		url = prefix+'/'+part if isPlayList else part
-		http.appendPart(file, num, url, console)
+	for partNum, partUrl in enumerate(partsList, start=1):
+		console.sayPartDl(partNum, partsList, partUrl)
+		fullUrl = prefix+'/'+partUrl if isPlayList else partUrl
+		bytesGot = http.downloadPart(file, partNum, fullUrl, console)
 
-newName = videoTitle + ' ' + serverFileName
+newName = safeTitle + ' ' + serverFileName
 
 from os import rename
 from subprocess import run
 rename(serverFileName, newName)
 if console.askOpen(newName):
 	run(['explorer', newName])
+console.finish()

@@ -8,7 +8,6 @@ from selenium import webdriver
 import sys, os
 
 qualities = lambda: ['quality_1080p','quality_720p','quality_480p','quality_360p','quality_240p']
-
 qualityUrl = lambda driver, variable: driver.execute_script(f'return typeof({variable}) !== "undefined" ? {variable} : ""') 
 
 def urlAndTitle(pageUrl):
@@ -19,10 +18,15 @@ def urlAndTitle(pageUrl):
 	driver = webdriver.Chrome('./bin/chromedriver.exe', options=options)
 	driver.get(pageUrl.partition('&')[0])
 	
-	detected = [u for u in [qualityUrl(driver, q) for q in qualities()] if u]
+	videoUrls = [url for url in [
+			qualityUrl(driver, qualityName) for qualityName in qualities()
+		] if url]
 	title = driver.title
 	driver.close()
-	return detected[0], title
+	if len(videoUrls):
+		return videoUrls[0], title, ''
+	else:
+		return '', '', title
 
 if __name__ == "__main__":
 	print(urlAndTitle(input('paste url> ')))

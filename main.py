@@ -7,28 +7,28 @@ import json
 from os import path, remove, rename
 from subprocess import run
 
-def main():
+def main(module):
 	config = loadConfig('config.json')
 	console.introduce()
-	discoveredUrl, videoTitle, error = mod1.urlAndTitle(
+	discoveredUrl, videoTitle, error = module.urlAndTitle(
 			console.getClipboardUrl(config['matchDomain']))
 	if error:
 		console.sayError(error)
 		return
 
 	safeTitle = fileIo.safeFilename(videoTitle)
-	serverFileName = mod1.serverFilename(discoveredUrl)
+	serverFileName = module.serverFilename(discoveredUrl)
 	newName = f'{safeTitle} {serverFileName}'
 	if path.exists(newName):
 		console.sayError(f'file already exists: {newName}')
 		return
 
-	serverPath = mod1.serverPath(discoveredUrl)
+	serverPath = module.serverPath(discoveredUrl)
 	console.sayDlLocation(serverPath, serverFileName)
 	console.sayTitle(safeTitle)
 
 	try:
-		mod1.download(http, console, config, discoveredUrl)
+		module.download(http, console, config, discoveredUrl)
 	except KeyboardInterrupt as _:
 		remove(serverFileName)
 		console.sayError('download aborted & removed')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 	console.startup(path.realpath(path.curdir))
 	while True:
 		try:
-			main()
+			main(mod1)
 		except KeyboardInterrupt as _:
 			console.finish()
 			exit()

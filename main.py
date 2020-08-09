@@ -1,9 +1,12 @@
-from getDlUrl import urlAndTitle
 import console
-import httpIo as http
 import fileIo
-import os
+from getDlUrl import urlAndTitle
+import httpIo as http
+
 import json
+import os
+from os import rename
+from subprocess import run
 
 # Accepts 
 # ...xxx.mp4.urlset/index-f1-v1-a1.m3u8
@@ -12,15 +15,19 @@ import json
 def main():
 	config = loadConfig('config.json')
 	console.introduce()
-	pastedUrl, videoTitle, error = urlAndTitle(console.getClipboardUrl())
+	pastedUrl, videoTitle, error = urlAndTitle(console.getClipboardUrl(config['matchDomain']))
 	if not pastedUrl:
 		console.sayError(error)
 		return
+
 	safeTitle = fileIo.safeFilename(videoTitle)
+	serverFileName = http.urlToFilename(pastedUrl)
+	newName = safeTitle + ' ' + serverFileName
+	if os.path.exists(newName):
+		console.sayError(f'File already exists: {newName}')
+		return
 
 	prefix = http.urlPathPrefix(pastedUrl)
-	serverFileName = http.urlToFilename(pastedUrl)
-
 	console.sayDlLocation(prefix, serverFileName)
 	console.sayTitle(safeTitle)
 
@@ -33,10 +40,6 @@ def main():
 			fullUrl = prefix+'/'+partUrl if isPlayList else partUrl
 			http.downloadPart(config['headers'], file, partNum, fullUrl, console)
 
-	newName = safeTitle + ' ' + serverFileName
-
-	from os import rename
-	from subprocess import run
 	rename(serverFileName, newName)
 	if console.askOpen(newName):
 		run(['explorer', newName])

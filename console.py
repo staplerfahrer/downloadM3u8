@@ -6,7 +6,8 @@ startup = lambda cwd: print(f'Current working directory: {cwd}')
 introduce = lambda: print('Auto-download resource from web page URL'.ljust(pBarLen(), '_'))
 askUrl = lambda: input('Paste the page URL> ')
 # askFilename = lambda: input('Save with prefix> ')
-sayError = lambda error: print(f'Failed to get information: ({error}).')
+sayError = lambda error: print(f'Something\'s happened: {error}')
+sayClipboard = lambda clp: print(f'New clipboard text: {clp}')
 sayDlLocation = lambda prefix, tempName: print(f'Downloading from [{prefix}] to temporary file [{tempName}]...')
 sayTitle = lambda title: print(f'Resource title [{title}]')
 sayPartsList = lambda: print('Downloading m3u8 playlist...')
@@ -25,10 +26,13 @@ askRetry = lambda exc: input(f'This part failed to download ({exc}). Try again? 
 sayRetry = lambda downloaded, retry: print(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
 finish = lambda: print('_'*pBarLen())
 
-def getClipboardUrl():
+def getClipboardUrl(matchDomain):
+	clp = ''
 	while True:
-		txt = clipboard.getClipboardText()
-		if txt and txt[:8] == 'https://':
-			clipboard.emptyClipBoard()
-			return txt
 		sleep(0.1)
+		if clipboard.getClipboardText() != clp:
+			clp = clipboard.getClipboardText()
+			sayClipboard(clp)
+			if clp and clp[:8] == 'https://' and matchDomain in clp:
+				clipboard.emptyClipBoard()
+				return clp

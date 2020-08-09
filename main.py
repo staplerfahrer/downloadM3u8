@@ -10,14 +10,15 @@ from subprocess import run
 def main():
 	config = loadConfig('config.json')
 	console.introduce()
-	discoveredUrl, videoTitle, error = mod1.urlAndTitle(console.getClipboardUrl(config['matchDomain']))
+	discoveredUrl, videoTitle, error = mod1.urlAndTitle(
+			console.getClipboardUrl(config['matchDomain']))
 	if error:
 		console.sayError(error)
 		return
 
 	safeTitle = fileIo.safeFilename(videoTitle)
-	serverFileName = mod1.urlToFilename(discoveredUrl)
-	newName = safeTitle + ' ' + serverFileName
+	serverFileName = mod1.serverFilename(discoveredUrl)
+	newName = f'{safeTitle} {serverFileName}'
 	if path.exists(newName):
 		console.sayError(f'file already exists: {newName}')
 		return
@@ -26,11 +27,8 @@ def main():
 	console.sayDlLocation(serverPath, serverFileName)
 	console.sayTitle(safeTitle)
 
-	isPlayList = http.isPlayList(discoveredUrl)
-	partsList = http.toList(http.getM3u8PlayList(config['headers'], console, discoveredUrl)) if isPlayList else [discoveredUrl] 
-
 	try:
-		mod1.download(http, console, config, isPlayList, serverFileName, partsList, serverPath)
+		mod1.download(http, console, config, discoveredUrl)
 	except KeyboardInterrupt as _:
 		remove(serverFileName)
 		console.sayError('download aborted & removed')
@@ -38,8 +36,10 @@ def main():
 		return
 
 	rename(serverFileName, newName)
+
 	if console.askOpen(newName):
 		run(['explorer', newName])
+
 	console.finish()
 
 def loadConfig(filename):

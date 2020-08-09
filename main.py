@@ -4,8 +4,7 @@ from getDlUrl import urlAndTitle
 import httpIo as http
 
 import json
-import os
-from os import rename
+from os import path, remove, rename
 from subprocess import run
 
 # Accepts 
@@ -23,8 +22,8 @@ def main():
 	safeTitle = fileIo.safeFilename(videoTitle)
 	serverFileName = http.urlToFilename(pastedUrl)
 	newName = safeTitle + ' ' + serverFileName
-	if os.path.exists(newName):
-		console.sayError(f'File already exists: {newName}')
+	if path.exists(newName):
+		console.sayError(f'file already exists: {newName}')
 		return
 
 	prefix = http.urlPathPrefix(pastedUrl)
@@ -34,11 +33,17 @@ def main():
 	isPlayList = http.isPlayList(pastedUrl)
 	partsList = http.toList(http.getPlayList(config['headers'], console, pastedUrl)) if isPlayList else [pastedUrl] 
 
-	with open(serverFileName, 'wb') as file:
-		for partNum, partUrl in enumerate(partsList, start=1):
-			console.sayPartDl(partNum, partsList, partUrl)
-			fullUrl = prefix+'/'+partUrl if isPlayList else partUrl
-			http.downloadPart(config['headers'], file, partNum, fullUrl, console)
+	try:
+		with open(serverFileName, 'wb') as file:
+			for partNum, partUrl in enumerate(partsList, start=1):
+				console.sayPartDl(partNum, partsList, partUrl)
+				fullUrl = prefix+'/'+partUrl if isPlayList else partUrl
+				http.downloadPart(config['headers'], file, partNum, fullUrl, console)
+	except KeyboardInterrupt as _:
+		remove(serverFileName)
+		console.sayError('download aborted & removed')
+		console.finish()
+		return
 
 	rename(serverFileName, newName)
 	if console.askOpen(newName):
@@ -49,10 +54,12 @@ def loadConfig(filename):
 	with open(filename, 'r') as config:
 		return json.load(config)
 
-if __name__ == "__main__":
-	if (__file__):
-		newDir = os.path.dirname(os.path.realpath(__file__))
-		os.chdir(newDir)
-	console.startup(os.path.realpath(os.path.curdir))
+if __name__ == '__main__':
+	fileIo.changePathToHere(__file__)
+	console.startup(path.realpath(path.curdir))
 	while True:
-		main()
+		try:
+			main()
+		except KeyboardInterrupt as _:
+			console.finish()
+			exit()

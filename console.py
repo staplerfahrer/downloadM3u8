@@ -4,15 +4,13 @@ from time import sleep
 
 startup = lambda cwd: print(f'Current working directory: {cwd}')
 introduce = lambda: print('Auto-download resource from web page URL'.ljust(pBarLen(), '_'))
-askUrl = lambda: input('Paste the page URL> ')
-# askFilename = lambda: input('Save with prefix> ')
-sayError = lambda error: print(f'Something\'s happened: {error}')
+sayError = lambda error: print(f'\nSomething\'s happened: {error}\n')
 sayClipboard = lambda clp: print(f'New clipboard text: {clp}')
 sayDlLocation = lambda prefix, tempName: print(f'Downloading from [{prefix}] to temporary file [{tempName}]...')
 sayTitle = lambda title: print(f'Resource title [{title}]')
 sayPartsList = lambda: print('Downloading m3u8 playlist...')
 sayPartDl = lambda num, parts, part: print(f'Downloading part {num: >3} of {len(parts)}: {part[:80]}...', end=None)
-askOpen = lambda fileName: 'y' == input(f'Finished downloading [{fileName}]. Open? y/N> ')
+askOpen = lambda fileName: 'y' == input(f'Finished downloading [{fileName}].\nOpen? y/N> ')
 
 pBarLen = lambda: len(pBar(0,10**10,10**10,10**10))
 def pBar(last, progress, total, Bps):
@@ -25,14 +23,16 @@ sayFinished = lambda downloaded, ofTotal: print(f'\nFinished this part, {downloa
 askRetry = lambda exc: input(f'This part failed to download ({exc}). Try again? y/n')
 sayRetry = lambda downloaded, retry: print(f'Downloaded {downloaded:,} B, {"retrying..." if retry == "y" else "gave up."}')
 finish = lambda: print('_'*pBarLen())
+isMatch = lambda domain, url: url and url[:8] == 'https://' and domain in url
 
 def getClipboardUrl(matchDomain):
 	clp = ''
 	while True:
 		sleep(0.1)
-		if clipboard.getClipboardText() != clp:
-			clp = clipboard.getClipboardText()
-			sayClipboard(clp)
-			if clp and clp[:8] == 'https://' and matchDomain in clp:
-				clipboard.emptyClipBoard()
-				return clp
+		if clipboard.getClipboardText() == clp:
+			continue
+		clp = clipboard.getClipboardText()
+		sayClipboard(clp)
+		if isMatch(matchDomain, clp):
+			clipboard.emptyClipBoard()
+			return clp

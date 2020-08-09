@@ -39,7 +39,5 @@ def downloadPart(headers, file, num, url, console):
 isSlow = lambda startedAt, downloaded: Bps(downloaded, startedAt)<slowLimit 
 Bps = lambda delta, lastTime: delta/(time()-lastTime)
 
-urlPathPrefix = lambda url: url.rpartition('/')[0]
-urlToFilename = lambda url: re.search(r'/([^/]*?\.mp4)', url).group(1)
 isPlayList = lambda url: '.urlset' in url
 toList = lambda lst: [u for u in re.split(r'#EXT.*?,', lst) if len(u)]

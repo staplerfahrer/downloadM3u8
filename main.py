@@ -1,44 +1,36 @@
 import console
 import fileIo
-from getDlUrl import urlAndTitle
 import httpIo as http
+import module1.download as mod1
 
 import json
 from os import path, remove, rename
 from subprocess import run
 
-# Accepts 
-# ...xxx.mp4.urlset/index-f1-v1-a1.m3u8
-# or:
-# ...xxx.mp4?val...
 def main():
 	config = loadConfig('config.json')
 	console.introduce()
-	pastedUrl, videoTitle, error = urlAndTitle(console.getClipboardUrl(config['matchDomain']))
-	if not pastedUrl:
+	discoveredUrl, videoTitle, error = mod1.urlAndTitle(console.getClipboardUrl(config['matchDomain']))
+	if error:
 		console.sayError(error)
 		return
 
 	safeTitle = fileIo.safeFilename(videoTitle)
-	serverFileName = http.urlToFilename(pastedUrl)
+	serverFileName = mod1.urlToFilename(discoveredUrl)
 	newName = safeTitle + ' ' + serverFileName
 	if path.exists(newName):
 		console.sayError(f'file already exists: {newName}')
 		return
 
-	prefix = http.urlPathPrefix(pastedUrl)
-	console.sayDlLocation(prefix, serverFileName)
+	serverPath = mod1.serverPath(discoveredUrl)
+	console.sayDlLocation(serverPath, serverFileName)
 	console.sayTitle(safeTitle)
 
-	isPlayList = http.isPlayList(pastedUrl)
-	partsList = http.toList(http.getM3u8PlayList(config['headers'], console, pastedUrl)) if isPlayList else [pastedUrl] 
+	isPlayList = http.isPlayList(discoveredUrl)
+	partsList = http.toList(http.getM3u8PlayList(config['headers'], console, discoveredUrl)) if isPlayList else [discoveredUrl] 
 
 	try:
-		with open(serverFileName, 'wb') as file:
-			for partNum, partUrl in enumerate(partsList, start=1):
-				console.sayPartDl(partNum, partsList, partUrl)
-				fullUrl = prefix+'/'+partUrl if isPlayList else partUrl
-				http.downloadPart(config['headers'], file, partNum, fullUrl, console)
+		mod1.download(http, console, config, isPlayList, serverFileName, partsList, serverPath)
 	except KeyboardInterrupt as _:
 		remove(serverFileName)
 		console.sayError('download aborted & removed')

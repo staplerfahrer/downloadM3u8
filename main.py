@@ -31,7 +31,7 @@ def main():
 	console.sayTitle(safeTitle)
 
 	isPlayList = http.isPlayList(pastedUrl)
-	partsList = http.toList(http.getPlayList(config['headers'], console, pastedUrl)) if isPlayList else [pastedUrl] 
+	partsList = http.toList(http.getM3u8PlayList(config['headers'], console, pastedUrl)) if isPlayList else [pastedUrl] 
 
 	try:
 		with open(serverFileName, 'wb') as file:

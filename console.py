@@ -2,6 +2,7 @@ import math
 import clipboard
 from time import sleep
 
+startup = lambda cwd: print(f'Current working directory: {cwd}')
 introduce = lambda: print('Auto-download resource from web page URL'.ljust(pBarLen(), '_'))
 askUrl = lambda: input('Paste the page URL> ')
 # askFilename = lambda: input('Save with prefix> ')

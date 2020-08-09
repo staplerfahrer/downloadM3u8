@@ -17,9 +17,9 @@ def getClipboardText():
             data = user32.GetClipboardData(CF_TEXT)
             dataLocked = kernel32.GlobalLock(data)
             text = ctypes.c_char_p(dataLocked)
-            value = text.value
+            value = text.value # get the b'string'
             kernel32.GlobalUnlock(dataLocked)
-            return value.decode('utf-8')
+            return value.decode('ascii') # default is 'utf-8'
     finally:
         user32.CloseClipboard()
     return ''

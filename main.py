@@ -47,9 +47,9 @@ def loadConfig(filename):
 		return json.load(config)
 
 if __name__ == "__main__":
-	# if (__file__):
-	# 	newDir = os.path.realpath(__file__)
-	# 	os.chdir()
+	if (__file__):
+		newDir = os.path.dirname(os.path.realpath(__file__))
+		os.chdir(newDir)
 	console.startup(os.path.realpath(os.path.curdir))
 	while True:
 		main()

@@ -26,7 +26,8 @@ serverFilename = lambda url: re.search(
 # 	...xxx.mp4?val...
 def urlAndTitle(pageUrl):
 	options = webdriver.ChromeOptions()
-	options.add_argument('--window-size=100,100')
+	# options.add_argument('--window-size=100,100')
+	options.add_argument('--headless')
 	# options to prevent printing "DevTools listening on ..."
 	options.add_experimental_option('excludeSwitches', [
 			'enable-logging'])

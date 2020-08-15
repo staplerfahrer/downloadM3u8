@@ -1,11 +1,10 @@
-import console
-import fileIo
-import httpIo as http
-import module1.download as mod1
-
 import json
 from os import path, remove, rename
 from subprocess import run
+
+import console
+import fileIo
+import httpIo as http
 
 def main(module):
 	config = loadConfig('config.json')
@@ -51,7 +50,8 @@ if __name__ == '__main__':
 	console.startup(path.realpath(path.curdir))
 	while True:
 		try:
-			main(mod1)
+			import module1.download as currentModule
+			main(currentModule)
 		except KeyboardInterrupt as _:
 			console.finish()
 			exit()

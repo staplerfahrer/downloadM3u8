@@ -1,5 +1,6 @@
 import math
 import clipboard
+from concurrent import futures
 from time import sleep
 
 startup = lambda cwd: print(f'Current working directory: {cwd}')
@@ -37,3 +38,13 @@ def getClipboardUrl(matchDomain):
 		if isMatch(matchDomain, clp):
 			clipboard.emptyClipBoard()
 			return clp
+
+def waitFor(message, worker, job):
+	with futures.ThreadPoolExecutor(max_workers=1) as executor:
+		future = executor.submit(worker, job)
+		i = 0
+		while not future.done():
+			print(f'{message}{"."*(i+1):<3}', end='\r')
+			i = (i+1)%3
+			sleep(0.333)
+		return future.result()

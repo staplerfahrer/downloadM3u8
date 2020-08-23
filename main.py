@@ -9,8 +9,8 @@ import httpIo as http
 def main(module):
 	config = loadConfig('config.json')
 	console.introduce()
-	discoveredUrl, videoTitle, error = module.urlAndTitle(
-			console.getClipboardUrl(config['matchDomain']))
+	url = console.waitFor('Waiting for URL', console.getClipboardUrl, config['matchDomain'])
+	discoveredUrl, videoTitle, error = console.waitFor('Discovering', module.urlAndTitle, url)
 	if error:
 		console.sayError(error)
 		return
